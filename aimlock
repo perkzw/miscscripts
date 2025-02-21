@@ -143,7 +143,6 @@ local function initializeAimbot()
     table.insert(connections, renderConnection)
 end
 
--- Create the unload function
 local function unloadAimbot()
     -- Disable aimbot
     isAimbotActive = false
@@ -151,7 +150,7 @@ local function unloadAimbot()
 
     -- Disconnect all connections
     for _, connection in ipairs(connections) do
-        if connection then
+        if connection.Connected then  -- Check if connection is still active
             connection:Disconnect()
         end
     end
@@ -159,10 +158,17 @@ local function unloadAimbot()
     -- Clear connections table
     table.clear(connections)
     
-    -- Reset any camera modifications if needed
-    if Camera then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + Camera.CFrame.LookVector)
+    -- Reset camera modifications
+    if Camera and Camera.Parent then  -- Check if Camera still exists
+        local currentPos = Camera.CFrame.Position
+        local lookVector = Camera.CFrame.LookVector
+        Camera.CFrame = CFrame.new(currentPos, currentPos + lookVector)
     end
+    
+    -- Clear any remaining references
+    Camera = nil
+    LocalPlayer = nil
+    connections = {}
 end
 
 -- Initialize the aimbot
