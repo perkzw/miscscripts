@@ -1,100 +1,106 @@
---this is the esp script
-local lplr = game.Players.LocalPlayer
-local camera = game:GetService("Workspace").CurrentCamera
-local CurrentCamera = Workspace.CurrentCamera
-local worldToViewportPoint = CurrentCamera.worldToViewportPoint
+local ESP = {}
 
-local HeadOff = Vector3.new(0, 0.5, 0)
-local LegOff = Vector3.new(0, 3, 0)
+function ESP.new(initialColor)
+    local self = {
+        Connections = {},
+        Drawings = {},
+        Color = initialColor or Color3.new(1, 1, 1) -- Store color as a property
+    }
 
--- Store all connections and drawings for cleanup
-local ESP = {
-    Connections = {},
-    Drawings = {}
-}
+    local lplr = game.Players.LocalPlayer
+    local camera = game:GetService("Workspace").CurrentCamera
+    local CurrentCamera = Workspace.CurrentCamera
+    local worldToViewportPoint = CurrentCamera.worldToViewportPoint
+    local HeadOff = Vector3.new(0, 0.5, 0)
+    local LegOff = Vector3.new(0, 3, 0)
 
--- Function to create ESP for a player
-local function createPlayerESP(v)
-    local BoxOutline = Drawing.new("Square")
-    BoxOutline.Visible = false
-    BoxOutline.Color = Color3.new(0, 0, 0)
-    BoxOutline.Thickness = 3
-    BoxOutline.Transparency = 1
-    BoxOutline.Filled = false
-    
-    local Box = Drawing.new("Square")
-    Box.Visible = false
-    Box.Color = Color3.new(1, 1, 1)
-    Box.Thickness = 1
-    Box.Transparency = 1
-    Box.Filled = false
-    
-    -- Store drawings for cleanup
-    table.insert(ESP.Drawings, BoxOutline)
-    table.insert(ESP.Drawings, Box)
-    
-    local connection = game:GetService("RunService").RenderStepped:Connect(function()
-        if v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v ~= lplr and v.Character.Humanoid.Health > 0 then
-            local Vector, onScreen = camera:worldToViewportPoint(v.Character.HumanoidRootPart.Position)
-            
-            local RootPart = v.Character.HumanoidRootPart
-            local Head = v.Character.Head
-            local RootPosition, Rootvis = worldToViewportPoint(CurrentCamera, RootPart.Position)
-            local HeadPostion = worldToViewportPoint(CurrentCamera, Head.Position + HeadOff)
-            local LegPosition = worldToViewportPoint(CurrentCamera, RootPart.Position - LegOff)
-            
-            if onScreen then
-                BoxOutline.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
-                BoxOutline.Position = Vector2.new(RootPosition.x - BoxOutline.Size.x / 2, RootPosition.y - BoxOutline.Size.y / 2)
-                BoxOutline.Visible = true
+    -- Function to create ESP for a player
+    local function createPlayerESP(v)
+        local BoxOutline = Drawing.new("Square")
+        BoxOutline.Visible = false
+        BoxOutline.Color = Color3.new(0, 0, 0)
+        BoxOutline.Thickness = 3
+        BoxOutline.Transparency = 1
+        BoxOutline.Filled = false
+        
+        local Box = Drawing.new("Square")
+        Box.Visible = false
+        Box.Color = self.Color -- Use the stored color
+        Box.Thickness = 1
+        Box.Transparency = 1
+        Box.Filled = false
+        
+        -- Store drawings for cleanup
+        table.insert(self.Drawings, BoxOutline)
+        table.insert(self.Drawings, Box)
+        
+        local connection = game:GetService("RunService").RenderStepped:Connect(function()
+            if v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v ~= lplr and v.Character.Humanoid.Health > 0 then
+                local Vector, onScreen = camera:worldToViewportPoint(v.Character.HumanoidRootPart.Position)
                 
-                Box.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
-                Box.Position = Vector2.new(RootPosition.x - Box.Size.x / 2, RootPosition.y - Box.Size.y / 2)
-                Box.Visible = true
+                local RootPart = v.Character.HumanoidRootPart
+                local Head = v.Character.Head
+                local RootPosition, Rootvis = worldToViewportPoint(CurrentCamera, RootPart.Position)
+                local HeadPostion = worldToViewportPoint(CurrentCamera, Head.Position + HeadOff)
+                local LegPosition = worldToViewportPoint(CurrentCamera, RootPart.Position - LegOff)
+                
+                if onScreen then
+                    BoxOutline.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
+                    BoxOutline.Position = Vector2.new(RootPosition.x - BoxOutline.Size.x / 2, RootPosition.y - BoxOutline.Size.y / 2)
+                    BoxOutline.Visible = true
+                    
+                    Box.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
+                    Box.Position = Vector2.new(RootPosition.x - Box.Size.x / 2, RootPosition.y - Box.Size.y / 2)
+                    Box.Color = self.Color -- Update color
+                    Box.Visible = true
+                else
+                    BoxOutline.Visible = false
+                    Box.Visible = false
+                end
             else
                 BoxOutline.Visible = false
                 Box.Visible = false
             end
-        else
-            BoxOutline.Visible = false
-            Box.Visible = false
-        end
+        end)
+        
+        table.insert(self.Connections, connection)
+    end
+
+    -- Create ESP for existing players
+    for _, v in pairs(game.Players:GetChildren()) do
+        createPlayerESP(v)
+    end
+
+    -- Create ESP for new players
+    local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
+        createPlayerESP(v)
     end)
-    
-    -- Store connection for cleanup
-    table.insert(ESP.Connections, connection)
-end
+    table.insert(self.Connections, playerAddedConnection)
 
--- Create ESP for existing players
-for _, v in pairs(game.Players:GetChildren()) do
-    createPlayerESP(v)
-end
-
--- Create ESP for new players
-local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
-    createPlayerESP(v)
-end)
-table.insert(ESP.Connections, playerAddedConnection)
-
--- Unload function
-function ESP:Unload()
-    -- Disconnect all connections
-    for _, connection in ipairs(self.Connections) do
-        if connection then
-            connection:Disconnect()
-        end
+    -- Function to update ESP color
+    function self:UpdateColor(newColor)
+        self.Color = newColor
     end
-    
-    -- Remove all drawings
-    for _, drawing in ipairs(self.Drawings) do
-        if drawing then
-            drawing:Remove()
+
+    -- Unload function
+    function self:Unload()
+        for _, connection in ipairs(self.Connections) do
+            if connection then
+                connection:Disconnect()
+            end
         end
+        
+        for _, drawing in ipairs(self.Drawings) do
+            if drawing then
+                drawing:Remove()
+            end
+        end
+        
+        self.Connections = {}
+        self.Drawings = {}
     end
-    
-    -- Clear tables
-    self.Connections = {}
-    self.Drawings = {}
+
+    return self
 end
 
 return ESP
