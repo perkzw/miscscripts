@@ -102,23 +102,19 @@ end
 -- Function to lock camera and aim at the closest player
 local function aimbot()
     if lockedPlayer then
+        -- If the locked player is critical, stop aiming at them
         if isPlayerCritical(lockedPlayer) then
             lockedPlayer = nil
             return
         end
         
+        -- Continue aiming at the locked player
         if lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("Head") then
             local targetPos = lockedPlayer.Character.Head.Position
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
         else
+            -- If the character or head is missing, release the lock
             lockedPlayer = nil
-        end
-    else
-        local targetPlayer = getClosestPlayer()
-        if targetPlayer then
-            lockedPlayer = targetPlayer
-            local targetPos = targetPlayer.Character.Head.Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
         end
     end
 end
@@ -128,6 +124,9 @@ function AimbotModule.toggleAimbot()
     AimbotModule.isAimbotActive = not AimbotModule.isAimbotActive
     if not AimbotModule.isAimbotActive then
         lockedPlayer = nil
+    else
+        -- When toggling on, find a new target
+        lockedPlayer = getClosestPlayer()
     end
     print("Aimbot " .. (AimbotModule.isAimbotActive and "enabled" or "disabled"))
 end
