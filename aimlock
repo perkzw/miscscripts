@@ -1,5 +1,5 @@
 -- Create a global table to store aimbot functions and state
-getgenv().AimbotModule = {}
+getgenv().AimbotModule = AimbotModule or {}
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -20,7 +20,13 @@ local maxDistance = 500
 local lockedPlayer = nil
 
 -- Event connections
-local connections = {}
+if AimbotModule.connections then
+    -- Clean up existing connections if script is reloaded
+    for _, connection in pairs(AimbotModule.connections) do
+        connection:Disconnect()
+    end
+end
+AimbotModule.connections = {}
 
 -- Function to check if a player is downed or critical
 local function isPlayerCritical(player)
@@ -126,22 +132,25 @@ function AimbotModule.toggleAimbot()
     print("Aimbot " .. (AimbotModule.isAimbotActive and "enabled" or "disabled"))
 end
 
--- Expose unload function globally
+-- Modified unload function that preserves the functions
 function AimbotModule.unload()
-    for _, connection in pairs(connections) do
+    -- Disconnect all connections
+    for _, connection in pairs(AimbotModule.connections) do
         connection:Disconnect()
     end
 
+    -- Clear connections table but keep the table itself
+    table.clear(AimbotModule.connections)
+
+    -- Reset state
     AimbotModule.isAimbotActive = false
     lockedPlayer = nil
     
-    -- Clear the global table
-    table.clear(getgenv().AimbotModule)
     print("Aimbot unloaded.")
 end
 
 -- Setup connections
-connections.toggleAimbot = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+AimbotModule.connections.toggleAimbot = UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
 
     if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == powerUpKey then
@@ -149,7 +158,7 @@ connections.toggleAimbot = UserInputService.InputBegan:Connect(function(input, g
     end
 end)
 
-connections.renderStepped = RunService.RenderStepped:Connect(function()
+AimbotModule.connections.renderStepped = RunService.RenderStepped:Connect(function()
     if AimbotModule.isAimbotActive then
         aimbot()
     end
