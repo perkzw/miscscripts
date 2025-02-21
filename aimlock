@@ -1,3 +1,6 @@
+-- Create a global table to store aimbot functions and state
+getgenv().AimbotModule = {}
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,7 +11,7 @@ local Camera = workspace.CurrentCamera
 local powerUpKey = Enum.KeyCode.E
 
 -- Aimbot state (on/off)
-local isAimbotActive = false
+AimbotModule.isAimbotActive = false
 
 -- Maximum distance for the aimbot to track players
 local maxDistance = 500
@@ -26,13 +29,11 @@ local function isPlayerCritical(player)
     local humanoid = player.Character:FindFirstChild("Humanoid")
     if not humanoid then return true end
     
-    -- Check if health is 1 or less
     if humanoid.Health <= 1 then
         return true
     end
     
-    -- Additional check for downed state (you might need to adjust this based on your game)
-    local isDown = player.Character:GetAttribute("Downed") -- Adjust this based on how your game indicates downed state
+    local isDown = player.Character:GetAttribute("Downed")
     if isDown then
         return true
     end
@@ -40,24 +41,21 @@ local function isPlayerCritical(player)
     return false
 end
 
--- Function to check if a target is visible (only used for initial targeting)
+-- Function to check if a target is visible
 local function isTargetVisible(target)
     if not target or not target.Character or not target.Character:FindFirstChild("Head") then
         return false
     end
 
-    -- Get the position of the local player's camera and the target's head
     local cameraPos = Camera.CFrame.Position
     local targetPos = target.Character.Head.Position
 
-    -- Raycast to check for obstacles
     local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character} -- Ignore the local player's character
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
     local raycastResult = workspace:Raycast(cameraPos, (targetPos - cameraPos).Unit * maxDistance, raycastParams)
 
-    -- If the raycast hits something, check if it's the target
     if raycastResult then
         local hit = raycastResult.Instance
         return hit and hit:IsDescendantOf(target.Character)
@@ -72,7 +70,6 @@ local function getClosestPlayer()
     local closestDistance = maxDistance
     local mouseLocation = UserInputService:GetMouseLocation()
 
-    -- Loop through all players (excluding the local player)
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and 
            player.Character and 
@@ -85,7 +82,6 @@ local function getClosestPlayer()
             if onScreen then
                 local distance = (mouseLocation - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
                 
-                -- Only check visibility for initial targeting
                 if distance < closestDistance and isTargetVisible(player) then
                     closestPlayer = player
                     closestDistance = distance
@@ -100,22 +96,18 @@ end
 -- Function to lock camera and aim at the closest player
 local function aimbot()
     if lockedPlayer then
-        -- Only check if player is critical, ignore wall visibility
         if isPlayerCritical(lockedPlayer) then
             lockedPlayer = nil
             return
         end
         
-        -- Continue aiming at locked player regardless of walls
         if lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("Head") then
             local targetPos = lockedPlayer.Character.Head.Position
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
         else
-            -- If character or head is missing, release lock
             lockedPlayer = nil
         end
     else
-        -- If no player is locked, find the closest visible player to mouse
         local targetPlayer = getClosestPlayer()
         if targetPlayer then
             lockedPlayer = targetPlayer
@@ -125,45 +117,40 @@ local function aimbot()
     end
 end
 
--- Function to toggle the aimbot on or off when E is pressed
-local function toggleAimbot()
-    isAimbotActive = not isAimbotActive
-    if not isAimbotActive then
+-- Expose toggle function globally
+function AimbotModule.toggleAimbot()
+    AimbotModule.isAimbotActive = not AimbotModule.isAimbotActive
+    if not AimbotModule.isAimbotActive then
         lockedPlayer = nil
     end
+    print("Aimbot " .. (AimbotModule.isAimbotActive and "enabled" or "disabled"))
 end
 
--- Function to unload the aimbot
-local function unload()
-    -- Disconnect all event connections
+-- Expose unload function globally
+function AimbotModule.unload()
     for _, connection in pairs(connections) do
         connection:Disconnect()
     end
 
-    -- Reset variables
-    isAimbotActive = false
+    AimbotModule.isAimbotActive = false
     lockedPlayer = nil
-
-    -- Optionally, reset the camera or perform other cleanup
+    
+    -- Clear the global table
+    table.clear(getgenv().AimbotModule)
     print("Aimbot unloaded.")
 end
 
--- Detect when the player presses E to toggle aimbot
+-- Setup connections
 connections.toggleAimbot = UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
 
     if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == powerUpKey then
-        toggleAimbot()
+        AimbotModule.toggleAimbot()
     end
 end)
 
--- Update the camera position when aimbot is active
 connections.renderStepped = RunService.RenderStepped:Connect(function()
-    if isAimbotActive then
+    if AimbotModule.isAimbotActive then
         aimbot()
     end
 end)
-
--- Example of how to call the unload function
--- You can call this manually or when the script is being destroyed
--- unload()
