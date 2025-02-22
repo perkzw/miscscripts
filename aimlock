@@ -11,7 +11,7 @@ AimbotModule.isAimbotActive = false
 AimbotModule.maxDistance = 500
 local lockedPlayer = nil
 
--- Function to find the player nearest to the cursor
+-- Function to find the player closest to the mouse cursor
 local function getClosestPlayerToCursor()
     local closestPlayer = nil
     local closestDistance = math.huge
