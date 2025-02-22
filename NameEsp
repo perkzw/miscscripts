@@ -10,7 +10,7 @@ function NameESP.new(initialColor)
     local lplr = game.Players.LocalPlayer
     local camera = game:GetService("Workspace").CurrentCamera
     local worldToViewportPoint = camera.worldToViewportPoint
-    local HeadOff = Vector3.new(0, 2.5, 0) -- Offset for name position above the head
+    local HeadOff = Vector3.new(0, 3, 0) -- Adjusted offset for name position (higher)
 
     -- Function to create Name ESP for a player
     local function createPlayerNameESP(v)
@@ -19,12 +19,12 @@ function NameESP.new(initialColor)
         local NameText = Drawing.new("Text")
         NameText.Visible = false
         NameText.Color = self.Color -- Use the stored color
-        NameText.Size = 18
+        NameText.Size = 16
         NameText.Center = true
         NameText.Outline = true
         NameText.OutlineColor = Color3.new(0, 0, 0) -- Black outline for better visibility
         NameText.Font = "SourceSans" -- Use SourceSans font
-        NameText.Text = v.Name
+        NameText.Text = v.Name -- No brackets around the name
 
         -- Store drawing for cleanup
         table.insert(self.Drawings, NameText)
