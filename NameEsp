@@ -93,7 +93,7 @@ end
 ps.PlayerAdded:Connect(p_added)
 
 -- Custom unload function
-local function unloadESP()
+_G.unloadESP = function()
     -- Remove all Drawing objects
     for _, drawing in ipairs(ESPInstances) do
         if drawing then
@@ -110,6 +110,3 @@ local function unloadESP()
     end
     Connections = {}
 end
-
--- Example: Call unloadESP() to disable ESP
--- unloadESP()
