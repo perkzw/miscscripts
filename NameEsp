@@ -1,98 +1,115 @@
-local NameESP = {}
+local c = workspace.CurrentCamera
+local ps = game:GetService("Players")
+local lp = ps.LocalPlayer
+local rs = game:GetService("RunService")
 
-function NameESP.new(initialColor)
-    local self = {
-        Connections = {},
-        Drawings = {},
-        Color = initialColor or Color3.new(1, 1, 1) -- Default color: white
-    }
+-- Table to store ESP instances and connections
+local ESPInstances = {}
+local Connections = {}
 
-    local lplr = game.Players.LocalPlayer
-    local camera = game:GetService("Workspace").CurrentCamera
-    local worldToViewportPoint = camera.worldToViewportPoint
-    local HeadOff = Vector3.new(0, 3, 0) -- Adjusted offset for name position (higher)
+-- Function to create ESP for a player
+local function esp(p, cr)
+    local h = cr:WaitForChild("Humanoid")
+    local hrp = cr:WaitForChild("Head")
 
-    -- Function to create Name ESP for a player
-    local function createPlayerNameESP(v)
-        if v == lplr or not v.Character or not v.Character:FindFirstChild("Head") then return end
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Center = true
+    text.Outline = true
+    text.OutlineColor = Color3.new(0, 0, 0) -- Black outline
+    text.Font = 3 -- SourceSans font
+    text.Size = 16.16
+    text.Color = Color3.new(170, 170, 170) -- Default text color
 
-        local NameText = Drawing.new("Text")
-        NameText.Visible = false
-        NameText.Color = self.Color -- Use the stored color
-        NameText.Size = 16
-        NameText.Center = true
-        NameText.Outline = true
-        NameText.OutlineColor = Color3.new(0, 0, 0) -- Black outline for better visibility
-        NameText.Font = "SourceSans" -- Use SourceSans font
-        NameText.Text = v.Name -- No brackets around the name
+    -- Store the Drawing object
+    table.insert(ESPInstances, text)
 
-        -- Store drawing for cleanup
-        table.insert(self.Drawings, NameText)
+    local conection
+    local conection2
+    local conection3
 
-        local connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if v.Character and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
-                local head = v.Character:FindFirstChild("Head")
-                if head then
-                    local Vector, onScreen = camera:worldToViewportPoint(head.Position + HeadOff)
-                    if onScreen then
-                        NameText.Position = Vector2.new(Vector.x, Vector.y)
-                        NameText.Visible = true
-                    else
-                        NameText.Visible = false
-                    end
-                else
-                    NameText.Visible = false
-                end
-            else
-                NameText.Visible = false
-            end
-        end)
-
-        table.insert(self.Connections, connection)
-    end
-
-    -- Create Name ESP for existing players
-    for _, v in pairs(game.Players:GetPlayers()) do
-        if v ~= lplr then
-            createPlayerNameESP(v)
+    local function dc()
+        text.Visible = false
+        text:Remove()
+        if conection then
+            conection:Disconnect()
+            conection = nil
+        end
+        if conection2 then
+            conection2:Disconnect()
+            conection2 = nil
+        end
+        if conection3 then
+            conection3:Disconnect()
+            conection3 = nil
         end
     end
 
-    -- Create Name ESP for new players
-    local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
-        createPlayerNameESP(v)
+    conection2 = cr.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            dc()
+        end
     end)
-    table.insert(self.Connections, playerAddedConnection)
 
-    -- Function to update Name ESP color
-    function self:UpdateColor(newColor)
-        self.Color = newColor
-        for _, drawing in ipairs(self.Drawings) do
-            if drawing and drawing:IsA("Text") then
-                drawing.Color = newColor
-            end
+    conection3 = h.HealthChanged:Connect(function(v)
+        if (v <= 0) or (h:GetState() == Enum.HumanoidStateType.Dead) then
+            dc()
         end
-    end
+    end)
 
-    -- Unload function
-    function self:Unload()
-        for _, connection in ipairs(self.Connections) do
-            if connection then
-                connection:Disconnect()
-            end
+    conection = rs.RenderStepped:Connect(function()
+        local hrp_pos, hrp_onscreen = c:WorldToViewportPoint(hrp.Position)
+        if hrp_onscreen then
+            text.Position = Vector2.new(hrp_pos.X, hrp_pos.Y - 27) -- Adjust Y offset for name placement
+            text.Text = p.Name -- No brackets
+            text.Visible = true
+        else
+            text.Visible = false
         end
+    end)
 
-        for _, drawing in ipairs(self.Drawings) do
-            if drawing then
-                drawing:Remove()
-            end
-        end
-
-        self.Connections = {}
-        self.Drawings = {}
-    end
-
-    return self
+    -- Store the connection
+    table.insert(Connections, conection)
 end
 
-return NameESP
+-- Function to handle player additions
+local function p_added(p)
+    if p.Character then
+        esp(p, p.Character)
+    end
+    p.CharacterAdded:Connect(function(cr)
+        esp(p, cr)
+    end)
+end
+
+-- Initialize ESP for existing players
+for _, p in pairs(ps:GetPlayers()) do
+    if p ~= lp then
+        p_added(p)
+    end
+end
+
+-- Listen for new players
+ps.PlayerAdded:Connect(p_added)
+
+-- Custom unload function
+local function unloadESP()
+    -- Remove all Drawing objects
+    for _, drawing in ipairs(ESPInstances) do
+        if drawing then
+            drawing:Remove()
+        end
+    end
+    ESPInstances = {}
+
+    -- Disconnect all connections
+    for _, connection in ipairs(Connections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    Connections = {}
+end
+
+-- Example: Call unloadESP() to disable ESP
+-- unloadESP()
