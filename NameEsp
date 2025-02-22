@@ -5,7 +5,8 @@ function NameESP.new(initialColor, initialSize)
         Connections = {},
         Drawings = {},
         Color = initialColor or Color3.new(1, 1, 1), -- Default color: white
-        Size = initialSize or 18 -- Default size: 18
+        Size = initialSize or 18, -- Default size: 12
+        Enabled = false -- Track if ESP is enabled
     }
 
     local lplr = game.Players.LocalPlayer
@@ -28,7 +29,7 @@ function NameESP.new(initialColor, initialSize)
         table.insert(self.Drawings, NameText)
 
         local connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v ~= lplr and v.Character.Humanoid.Health > 0 then
+            if self.Enabled and v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v ~= lplr and v.Character.Humanoid.Health > 0 then
                 local head = v.Character:FindFirstChild("Head")
                 if head then
                     local Vector, onScreen = camera:worldToViewportPoint(head.Position + HeadOff)
@@ -49,18 +50,20 @@ function NameESP.new(initialColor, initialSize)
         table.insert(self.Connections, connection)
     end
 
-    -- Create Name ESP for existing players
-    for _, v in pairs(game.Players:GetChildren()) do
-        if v ~= lplr then
-            createPlayerNameESP(v)
+    -- Function to initialize ESP for all players
+    local function initializeESP()
+        for _, v in pairs(game.Players:GetChildren()) do
+            if v ~= lplr then
+                createPlayerNameESP(v)
+            end
         end
-    end
 
-    -- Create Name ESP for new players
-    local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
-        createPlayerNameESP(v)
-    end)
-    table.insert(self.Connections, playerAddedConnection)
+        -- Create Name ESP for new players
+        local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
+            createPlayerNameESP(v)
+        end)
+        table.insert(self.Connections, playerAddedConnection)
+    end
 
     -- Function to update Name ESP color
     function self:UpdateColor(newColor)
@@ -79,6 +82,16 @@ function NameESP.new(initialColor, initialSize)
             if drawing and drawing:IsA("Text") then
                 drawing.Size = newSize
             end
+        end
+    end
+
+    -- Function to enable/disable Name ESP
+    function self:SetEnabled(value)
+        self.Enabled = value
+        if value then
+            initializeESP()
+        else
+            self:Unload()
         end
     end
 
