@@ -11,7 +11,31 @@ AimbotModule.isAimbotActive = false
 AimbotModule.maxDistance = 500
 local lockedPlayer = nil
 
--- Function to find the player closest to the mouse cursor
+-- Function to check if a target is visible (not behind a wall)
+local function isTargetVisible(target)
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        return false
+    end
+
+    local cameraPos = Camera.CFrame.Position
+    local targetPos = target.Character.HumanoidRootPart.Position
+
+    -- Raycast to check for walls
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local raycastResult = workspace:Raycast(cameraPos, (targetPos - cameraPos).Unit * AimbotModule.maxDistance, raycastParams)
+
+    if raycastResult then
+        local hit = raycastResult.Instance
+        return hit and hit:IsDescendantOf(target.Character)
+    end
+
+    return false
+end
+
+-- Function to find the player closest to the mouse cursor and visible
 local function getClosestPlayerToCursor()
     local closestPlayer = nil
     local closestDistance = math.huge
@@ -24,7 +48,7 @@ local function getClosestPlayerToCursor()
 
             if onScreen then
                 local distance = (mouseLocation - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                if distance < closestDistance then
+                if distance < closestDistance and isTargetVisible(player) then
                     closestPlayer = player
                     closestDistance = distance
                 end
@@ -35,7 +59,7 @@ local function getClosestPlayerToCursor()
     return closestPlayer
 end
 
--- Function to toggle the aimbot (inverted logic)
+-- Function to toggle the aimbot
 function AimbotModule.toggleAimbot(shouldLock)
     if shouldLock then
         -- Lock onto the closest player to the cursor
@@ -68,8 +92,14 @@ end
 -- Aimbot logic (runs every frame)
 RunService.RenderStepped:Connect(function()
     if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Lock onto the target
-        local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+        -- Check if the locked player is still visible
+        if isTargetVisible(lockedPlayer) then
+            -- Lock onto the target
+            local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+        else
+            -- If the player is behind a wall, do not unlock
+            print("Target is behind a wall, but still locked.")
+        end
     end
 end)
