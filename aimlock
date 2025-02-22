@@ -1,4 +1,3 @@
--- Aimbot Module Code (add this to the aimbot script if missing)
 getgenv().AimbotModule = AimbotModule or {}
 
 local Players = game:GetService("Players")
@@ -12,13 +11,45 @@ AimbotModule.isAimbotActive = false
 AimbotModule.maxDistance = 500
 local lockedPlayer = nil
 
--- Function to toggle the aimbot
-function AimbotModule.toggleAimbot()
-    AimbotModule.isAimbotActive = not AimbotModule.isAimbotActive
-    if not AimbotModule.isAimbotActive then
-        lockedPlayer = nil
+-- Function to find the player nearest to the cursor
+local function getClosestPlayerToCursor()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    local mouseLocation = UserInputService:GetMouseLocation()
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = player.Character.HumanoidRootPart.Position
+            local screenPos, onScreen = Camera:WorldToScreenPoint(targetPos)
+
+            if onScreen then
+                local distance = (mouseLocation - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if distance < closestDistance then
+                    closestPlayer = player
+                    closestDistance = distance
+                end
+            end
+        end
     end
-    print("Aimbot " .. (AimbotModule.isAimbotActive and "enabled" or "disabled"))
+
+    return closestPlayer
+end
+
+-- Function to toggle the aimbot (inverted logic)
+function AimbotModule.toggleAimbot(shouldLock)
+    if shouldLock then
+        -- Lock onto the closest player to the cursor
+        lockedPlayer = getClosestPlayerToCursor()
+        if lockedPlayer then
+            print("Locked onto:", lockedPlayer.Name)
+        else
+            print("No valid target found!")
+        end
+    else
+        -- Unlock the current target
+        lockedPlayer = nil
+        print("Aimbot unlocked.")
+    end
 end
 
 -- Function to unload the aimbot
@@ -36,26 +67,9 @@ end
 
 -- Aimbot logic (runs every frame)
 RunService.RenderStepped:Connect(function()
-    if AimbotModule.isAimbotActive then
-        -- Find and lock onto the closest player
-        local closestPlayer = nil
-        local closestDistance = AimbotModule.maxDistance
-
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local distance = (player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if distance < closestDistance then
-                    closestPlayer = player
-                    closestDistance = distance
-                end
-            end
-        end
-
-        -- Lock onto the closest player
-        if closestPlayer then
-            lockedPlayer = closestPlayer
-            local targetPos = closestPlayer.Character.HumanoidRootPart.Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-        end
+    if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        -- Lock onto the target
+        local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
     end
 end)
