@@ -1,0 +1,133 @@
+-- ESP Settings and Class
+local ESP = {}
+ESP.__index = ESP
+
+function ESP.new(initialColor)
+    local self = setmetatable({}, ESP)
+    self.enabled = false
+    self.textsize = 11
+    self.colour = initialColor or Color3.fromRGB(255, 255, 255)
+    self.outlineColor = Color3.fromRGB(0, 0, 0)
+    self.espInstances = {}
+    
+    return self
+end
+
+function ESP:CreateESP(head)
+    -- Create instances
+    local gui = Instance.new("BillboardGui")
+    local esp = Instance.new("TextLabel", gui)
+    
+    -- Create outline labels
+    local outlines = {}
+    local outlineOffsets = {
+        Vector2.new(-1, -1),
+        Vector2.new(-1, 1),
+        Vector2.new(1, -1),
+        Vector2.new(1, 1),
+        Vector2.new(-1, 0),
+        Vector2.new(1, 0),
+        Vector2.new(0, -1),
+        Vector2.new(0, 1)
+    }
+    
+    -- GUI Properties
+    gui.Name = "Cracked esp"
+    gui.ResetOnSpawn = false
+    gui.AlwaysOnTop = true
+    gui.LightInfluence = 0
+    gui.Size = UDim2.new(1.75, 0, 1.75, 0)
+    
+    -- Create outline labels
+    for _, offset in ipairs(outlineOffsets) do
+        local outline = Instance.new("TextLabel", esp)
+        outline.Name = "Outline"
+        outline.BackgroundTransparency = 1
+        outline.Position = UDim2.new(0, offset.X, 0, offset.Y)
+        outline.Size = UDim2.new(1, 0, 1, 0)
+        outline.Font = "SourceSans"
+        outline.TextSize = self.textsize
+        outline.TextColor3 = self.outlineColor
+        outline.Text = ""
+        outline.ZIndex = 1
+        table.insert(outlines, outline)
+    end
+    
+    -- ESP Text Properties
+    esp.BackgroundTransparency = 1
+    esp.Text = ""
+    esp.Size = UDim2.new(1, 0, 1, 0)
+    esp.Font = "SourceSans"
+    esp.TextSize = self.textsize
+    esp.TextColor3 = self.colour
+    esp.ZIndex = 2
+    
+    gui.Parent = head
+    self.espInstances[head] = {gui = gui, esp = esp, outlines = outlines}
+end
+
+function ESP:UpdateColor(newColor)
+    self.colour = newColor
+    for _, instance in pairs(self.espInstances) do
+        instance.esp.TextColor3 = newColor
+    end
+end
+
+function ESP:UpdateOutlineColor(newColor)
+    self.outlineColor = newColor
+    for _, instance in pairs(self.espInstances) do
+        for _, outline in ipairs(instance.outlines) do
+            outline.TextColor3 = newColor
+        end
+    end
+end
+
+function ESP:Toggle(state)
+    self.enabled = state
+    for _, instance in pairs(self.espInstances) do
+        instance.gui.Enabled = state
+    end
+end
+
+function ESP:Update()
+    if not self.enabled then return end
+    
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and 
+           player.Character and 
+           player.Character:FindFirstChild("Head") then
+            
+            local head = player.Character.Head
+            if not self.espInstances[head] then
+                self:CreateESP(head)
+            end
+            
+            -- Update ESP text
+            local espData = self.espInstances[head]
+            if espData then
+                espData.esp.Text = player.Name
+                for _, outline in ipairs(espData.outlines) do
+                    outline.Text = player.Name
+                end
+            end
+        end
+    end
+end
+
+function ESP:Start()
+    game:GetService("RunService").RenderStepped:Connect(function()
+        self:Update()
+    end)
+end
+
+function ESP:Unload()
+    for _, instance in pairs(self.espInstances) do
+        instance.gui:Destroy()
+    end
+    self.espInstances = {}
+end
+
+return ESP
