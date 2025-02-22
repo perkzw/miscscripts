@@ -45,11 +45,11 @@ function ESP.new(initialColor)
                 local LegPosition = worldToViewportPoint(CurrentCamera, RootPart.Position - LegOff)
                 
                 if onScreen then
-                    BoxOutline.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
+                    BoxOutline.Size = Vector2.new(2250 / RootPosition.z, HeadPostion.y - LegPosition.y)
                     BoxOutline.Position = Vector2.new(RootPosition.x - BoxOutline.Size.x / 2, RootPosition.y - BoxOutline.Size.y / 2)
                     BoxOutline.Visible = true
                     
-                    Box.Size = Vector2.new(2000 / RootPosition.z, HeadPostion.y - LegPosition.y)
+                    Box.Size = Vector2.new(2250 / RootPosition.z, HeadPostion.y - LegPosition.y)
                     Box.Position = Vector2.new(RootPosition.x - Box.Size.x / 2, RootPosition.y - Box.Size.y / 2)
                     Box.Color = self.Color -- Update color
                     Box.Visible = true
