@@ -115,4 +115,9 @@ RunService.RenderStepped:Connect(function()
 
         -- Apply smoothing
         local smoothFactor = AimbotModule.smoothing
-        local newCFrame = Camera.C
+        local newCFrame = Camera.CFrame:Lerp(CFrame.new(currentCameraPos, currentCameraPos + direction), 1 / smoothFactor)
+
+        -- Update the camera CFrame
+        Camera.CFrame = newCFrame
+    end
+end)
