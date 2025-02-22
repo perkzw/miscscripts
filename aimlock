@@ -92,14 +92,8 @@ end
 -- Aimbot logic (runs every frame)
 RunService.RenderStepped:Connect(function()
     if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Check if the locked player is still visible
-        if isTargetVisible(lockedPlayer) then
-            -- Lock onto the target
-            local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-        else
-            -- If the player is behind a wall, do not unlock
-            print("Target is behind a wall, but still locked.")
-        end
+        -- Lock onto the target regardless of walls
+        local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
     end
 end)
