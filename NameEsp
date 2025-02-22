@@ -18,7 +18,7 @@ local function esp(p, cr)
     text.Outline = true
     text.OutlineColor = Color3.new(0, 0, 0) -- Black outline
     text.Font = 3 -- SourceSans font
-    text.Size = 16.16
+    text.Size = 13
     text.Color = Color3.new(170, 170, 170) -- Default text color
 
     -- Store the Drawing object
