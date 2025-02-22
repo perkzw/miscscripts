@@ -17,7 +17,7 @@ function NameESP.new(initialColor)
         local NameText = Drawing.new("Text")
         NameText.Visible = false
         NameText.Color = self.Color -- Use the stored color
-        NameText.Size = 18
+        NameText.Size = 11
         NameText.Center = true
         NameText.Outline = true
         NameText.OutlineColor = Color3.new(0, 0, 0) -- Black outline for better visibility
