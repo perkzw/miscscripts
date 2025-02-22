@@ -1,133 +1,128 @@
--- ESP Settings and Class
-local ESP = {}
-ESP.__index = ESP
+local NameESP = {}
 
-function ESP.new(initialColor)
-    local self = setmetatable({}, ESP)
-    self.enabled = false
-    self.textsize = 11
-    self.colour = initialColor or Color3.fromRGB(255, 255, 255)
-    self.outlineColor = Color3.fromRGB(0, 0, 0)
-    self.espInstances = {}
-    
-    return self
-end
-
-function ESP:CreateESP(head)
-    -- Create instances
-    local gui = Instance.new("BillboardGui")
-    local esp = Instance.new("TextLabel", gui)
-    
-    -- Create outline labels
-    local outlines = {}
-    local outlineOffsets = {
-        Vector2.new(-1, -1),
-        Vector2.new(-1, 1),
-        Vector2.new(1, -1),
-        Vector2.new(1, 1),
-        Vector2.new(-1, 0),
-        Vector2.new(1, 0),
-        Vector2.new(0, -1),
-        Vector2.new(0, 1)
+function NameESP.new(initialColor, initialOutlineColor)
+    local self = {
+        Connections = {},
+        ESPInstances = {},
+        Color = initialColor or Color3.fromRGB(255, 255, 255), -- Default text color: white
+        OutlineColor = initialOutlineColor or Color3.fromRGB(0, 0, 0) -- Default outline color: black
     }
-    
-    -- GUI Properties
-    gui.Name = "Cracked esp"
-    gui.ResetOnSpawn = false
-    gui.AlwaysOnTop = true
-    gui.LightInfluence = 0
-    gui.Size = UDim2.new(1.75, 0, 1.75, 0)
-    
-    -- Create outline labels
-    for _, offset in ipairs(outlineOffsets) do
-        local outline = Instance.new("TextLabel", esp)
-        outline.Name = "Outline"
-        outline.BackgroundTransparency = 1
-        outline.Position = UDim2.new(0, offset.X, 0, offset.Y)
-        outline.Size = UDim2.new(1, 0, 1, 0)
-        outline.Font = "SourceSans"
-        outline.TextSize = self.textsize
-        outline.TextColor3 = self.outlineColor
-        outline.Text = ""
-        outline.ZIndex = 1
-        table.insert(outlines, outline)
-    end
-    
-    -- ESP Text Properties
-    esp.BackgroundTransparency = 1
-    esp.Text = ""
-    esp.Size = UDim2.new(1, 0, 1, 0)
-    esp.Font = "SourceSans"
-    esp.TextSize = self.textsize
-    esp.TextColor3 = self.colour
-    esp.ZIndex = 2
-    
-    gui.Parent = head
-    self.espInstances[head] = {gui = gui, esp = esp, outlines = outlines}
-end
 
-function ESP:UpdateColor(newColor)
-    self.colour = newColor
-    for _, instance in pairs(self.espInstances) do
-        instance.esp.TextColor3 = newColor
-    end
-end
+    local lplr = game.Players.LocalPlayer
+    local RunService = game:GetService("RunService")
 
-function ESP:UpdateOutlineColor(newColor)
-    self.outlineColor = newColor
-    for _, instance in pairs(self.espInstances) do
-        for _, outline in ipairs(instance.outlines) do
-            outline.TextColor3 = newColor
+    -- Function to create Name ESP for a player
+    local function createPlayerNameESP(v)
+        if v == lplr or not v.Character or not v.Character:FindFirstChild("Head") then return end
+
+        -- Create BillboardGui for the player's head
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "CrackedESP"
+        gui.Adornee = v.Character.Head
+        gui.Size = UDim2.new(1.75, 0, 1.75, 0)
+        gui.AlwaysOnTop = true
+        gui.ResetOnSpawn = false
+        gui.LightInfluence = 0
+
+        -- Create TextLabel for the player's name
+        local esp = Instance.new("TextLabel", gui)
+        esp.Text = v.Name -- Player name without brackets
+        esp.Size = UDim2.new(1, 0, 1, 0)
+        esp.BackgroundTransparency = 1
+        esp.TextColor3 = self.Color -- Text color
+        esp.Font = "SourceSans"
+        esp.TextSize = 11
+        esp.ZIndex = 2
+
+        -- Create outline labels (8 directions for better outline)
+        local outlineOffsets = {
+            Vector2.new(-1, -1),
+            Vector2.new(-1, 1),
+            Vector2.new(1, -1),
+            Vector2.new(1, 1),
+            Vector2.new(-1, 0),
+            Vector2.new(1, 0),
+            Vector2.new(0, -1),
+            Vector2.new(0, 1)
+        }
+
+        for _, offset in ipairs(outlineOffsets) do
+            local outline = Instance.new("TextLabel", gui)
+            outline.Name = "Outline"
+            outline.BackgroundTransparency = 1
+            outline.Position = UDim2.new(0, offset.X, 0, offset.Y)
+            outline.Size = UDim2.new(1, 0, 1, 0)
+            outline.Font = "SourceSans"
+            outline.TextSize = 11
+            outline.TextColor3 = self.OutlineColor -- Outline color
+            outline.Text = v.Name
+            outline.ZIndex = 1
+        end
+
+        -- Store ESP instance for cleanup
+        table.insert(self.ESPInstances, gui)
+    end
+
+    -- Create Name ESP for existing players
+    for _, v in pairs(game.Players:GetPlayers()) do
+        createPlayerNameESP(v)
+    end
+
+    -- Create Name ESP for new players
+    local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
+        createPlayerNameESP(v)
+    end)
+    table.insert(self.Connections, playerAddedConnection)
+
+    -- Update ESP visuals on character spawn
+    local characterAddedConnection = game.Players.PlayerAdded:Connect(function(v)
+        v.CharacterAdded:Connect(function()
+            createPlayerNameESP(v)
+        end)
+    end)
+    table.insert(self.Connections, characterAddedConnection)
+
+    -- Function to update Name ESP color
+    function self:UpdateColor(newColor)
+        self.Color = newColor
+        for _, gui in ipairs(self.ESPInstances) do
+            if gui and gui:FindFirstChild("TextLabel") then
+                gui.TextLabel.TextColor3 = newColor
+            end
         end
     end
-end
 
-function ESP:Toggle(state)
-    self.enabled = state
-    for _, instance in pairs(self.espInstances) do
-        instance.gui.Enabled = state
-    end
-end
-
-function ESP:Update()
-    if not self.enabled then return end
-    
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and 
-           player.Character and 
-           player.Character:FindFirstChild("Head") then
-            
-            local head = player.Character.Head
-            if not self.espInstances[head] then
-                self:CreateESP(head)
-            end
-            
-            -- Update ESP text
-            local espData = self.espInstances[head]
-            if espData then
-                espData.esp.Text = player.Name
-                for _, outline in ipairs(espData.outlines) do
-                    outline.Text = player.Name
+    -- Function to update Name ESP outline color
+    function self:UpdateOutlineColor(newOutlineColor)
+        self.OutlineColor = newOutlineColor
+        for _, gui in ipairs(self.ESPInstances) do
+            for _, child in ipairs(gui:GetChildren()) do
+                if child.Name == "Outline" then
+                    child.TextColor3 = newOutlineColor
                 end
             end
         end
     end
-end
 
-function ESP:Start()
-    game:GetService("RunService").RenderStepped:Connect(function()
-        self:Update()
-    end)
-end
+    -- Unload function
+    function self:Unload()
+        for _, connection in ipairs(self.Connections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
 
-function ESP:Unload()
-    for _, instance in pairs(self.espInstances) do
-        instance.gui:Destroy()
+        for _, gui in ipairs(self.ESPInstances) do
+            if gui then
+                gui:Destroy()
+            end
+        end
+
+        self.Connections = {}
+        self.ESPInstances = {}
     end
-    self.espInstances = {}
+
+    return self
 end
 
-return ESP
+return NameESP
