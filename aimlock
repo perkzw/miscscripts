@@ -10,6 +10,7 @@ local Camera = workspace.CurrentCamera
 AimbotModule.isAimbotActive = false
 AimbotModule.maxDistance = 500
 AimbotModule.lockPart = 'HumanoidRootPart' -- Default part to lock onto
+AimbotModule.smoothing = 10 -- Default smoothing value
 local lockedPlayer = nil
 
 -- Function to check if a target is visible (not behind a wall)
@@ -96,11 +97,22 @@ function AimbotModule.setLockPart(part)
     print("Locking onto:", part)
 end
 
+-- Function to set the smoothing value
+function AimbotModule.setSmoothing(value)
+    AimbotModule.smoothing = value
+    print("Smoothing set to:", value)
+end
+
 -- Aimbot logic (runs every frame)
 RunService.RenderStepped:Connect(function()
     if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild(AimbotModule.lockPart) then
-        -- Lock onto the target
+        -- Get the target position
         local targetPos = lockedPlayer.Character[AimbotModule.lockPart].Position
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-    end
-end)
+        local currentCameraPos = Camera.CFrame.Position
+
+        -- Calculate the direction to the target
+        local direction = (targetPos - currentCameraPos).Unit
+
+        -- Apply smoothing
+        local smoothFactor = AimbotModule.smoothing
+        local newCFrame = Camera.C
