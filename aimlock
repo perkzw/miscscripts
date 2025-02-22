@@ -9,16 +9,17 @@ local Camera = workspace.CurrentCamera
 -- Aimbot state
 AimbotModule.isAimbotActive = false
 AimbotModule.maxDistance = 500
+AimbotModule.lockPart = 'HumanoidRootPart' -- Default part to lock onto
 local lockedPlayer = nil
 
 -- Function to check if a target is visible (not behind a wall)
 local function isTargetVisible(target)
-    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+    if not target or not target.Character or not target.Character:FindFirstChild(AimbotModule.lockPart) then
         return false
     end
 
     local cameraPos = Camera.CFrame.Position
-    local targetPos = target.Character.HumanoidRootPart.Position
+    local targetPos = target.Character[AimbotModule.lockPart].Position
 
     -- Raycast to check for walls
     local raycastParams = RaycastParams.new()
@@ -42,8 +43,8 @@ local function getClosestPlayerToCursor()
     local mouseLocation = UserInputService:GetMouseLocation()
 
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = player.Character.HumanoidRootPart.Position
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(AimbotModule.lockPart) then
+            local targetPos = player.Character[AimbotModule.lockPart].Position
             local screenPos, onScreen = Camera:WorldToScreenPoint(targetPos)
 
             if onScreen then
@@ -89,11 +90,17 @@ function AimbotModule.setMaxDistance(distance)
     print("Max distance set to:", distance)
 end
 
+-- Function to set the part to lock onto
+function AimbotModule.setLockPart(part)
+    AimbotModule.lockPart = part
+    print("Locking onto:", part)
+end
+
 -- Aimbot logic (runs every frame)
 RunService.RenderStepped:Connect(function()
-    if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Lock onto the target regardless of walls
-        local targetPos = lockedPlayer.Character.HumanoidRootPart.Position
+    if lockedPlayer and lockedPlayer.Character and lockedPlayer.Character:FindFirstChild(AimbotModule.lockPart) then
+        -- Lock onto the target
+        local targetPos = lockedPlayer.Character[AimbotModule.lockPart].Position
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
     end
 end)
