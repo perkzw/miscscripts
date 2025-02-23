@@ -7,12 +7,6 @@ local rs = game:GetService("RunService")
 local ESPInstances = {}
 local Connections = {}
 
--- Default settings
-local espSettings = {
-    Color = Color3.new(170/255, 170/255, 170/255), -- Default text color
-    Size = 16 -- Default text size
-}
-
 -- Function to create ESP for a player
 local function esp(p, cr)
     local h = cr:WaitForChild("Humanoid")
@@ -24,9 +18,8 @@ local function esp(p, cr)
     text.Outline = true
     text.OutlineColor = Color3.new(0, 0, 0) -- Black outline
     text.Font = 3 -- SourceSans font
-    text.Size = espSettings.Size -- Use the stored size
-    text.Color = espSettings.Color -- Use the stored color
-    text.Text = p.Name -- No brackets
+    text.Size = 16
+    text.Color = Color3.new(170, 170, 170) -- Default text color
 
     -- Store the Drawing object
     table.insert(ESPInstances, text)
@@ -68,6 +61,7 @@ local function esp(p, cr)
         local hrp_pos, hrp_onscreen = c:WorldToViewportPoint(hrp.Position)
         if hrp_onscreen then
             text.Position = Vector2.new(hrp_pos.X, hrp_pos.Y - 27) -- Adjust Y offset for name placement
+            text.Text = p.Name -- No brackets
             text.Visible = true
         else
             text.Visible = false
@@ -97,16 +91,6 @@ end
 
 -- Listen for new players
 ps.PlayerAdded:Connect(p_added)
-
--- Function to update ESP color
-_G.updateESPColor = function(newColor)
-    espSettings.Color = newColor
-    for _, drawing in ipairs(ESPInstances) do
-        if drawing and drawing:IsA("Text") then
-            drawing.Color = newColor
-        end
-    end
-end
 
 -- Custom unload function
 _G.unloadESP = function()
