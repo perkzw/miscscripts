@@ -7,7 +7,7 @@ function NameESP.new(initialColor)
         Color = initialColor or Color3.new(1, 1, 1) -- Default color: white
     }
 
-    local lplr = game.Players.LocalPlayer
+    local lplr = game:GetService("Players").LocalPlayer
     local camera = game:GetService("Workspace").CurrentCamera
     local worldToViewportPoint = camera.worldToViewportPoint
     local HeadOff = Vector3.new(0, 2.5, 0) -- Offset for name position above the head
@@ -50,14 +50,14 @@ function NameESP.new(initialColor)
     end
 
     -- Create Name ESP for existing players
-    for _, v in pairs(game.Players:GetPlayers()) do
+    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
         if v ~= lplr then
             createPlayerNameESP(v)
         end
     end
 
     -- Create Name ESP for new players
-    local playerAddedConnection = game.Players.PlayerAdded:Connect(function(v)
+    local playerAddedConnection = game:GetService("Players").PlayerAdded:Connect(function(v)
         createPlayerNameESP(v)
     end)
     table.insert(self.Connections, playerAddedConnection)
