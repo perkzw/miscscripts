@@ -28,7 +28,7 @@ function NameESP.new(initialColor)
         table.insert(self.Drawings, NameText)
 
         local connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v ~= lplr and v.Character.Humanoid.Health > 0 then
+            if v.Character and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= lplr and v.Character.Humanoid.Health > 0 then
                 local head = v.Character:FindFirstChild("Head")
                 if head then
                     local Vector, onScreen = camera:worldToViewportPoint(head.Position + HeadOff)
@@ -50,7 +50,7 @@ function NameESP.new(initialColor)
     end
 
     -- Create Name ESP for existing players
-    for _, v in pairs(game.Players:GetChildren()) do
+    for _, v in pairs(game.Players:GetPlayers()) do
         if v ~= lplr then
             createPlayerNameESP(v)
         end
