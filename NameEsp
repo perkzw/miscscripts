@@ -90,4 +90,7 @@ function NameESP.new(initialColor)
         self.Drawings = {}
     end
 
-   
+    return self
+end
+
+return NameESP
